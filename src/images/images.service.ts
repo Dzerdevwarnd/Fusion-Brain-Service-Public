@@ -16,19 +16,7 @@ export class ImagesService {
 		return mod.default || mod
 	}
 
-	async getStyles() {
-		return this.fusionBrain.getValidStyles()
-	}
-
-	async checkAvailability() {
-		return this.fusionBrain.checkAvailability()
-	}
-
 	async create(prompt: string, style: string) {
-		/* 		const validStyles = await this.fusionBrain.getValidStyles()
-		if (!validStyles.includes(style)) {
-			throw new BadRequestException('Invalid style')
-		} */
 		const image = await this.prisma.image.create({ data: { prompt, style, status: 'PENDING' } })
 
 		// Fire and forget async generation

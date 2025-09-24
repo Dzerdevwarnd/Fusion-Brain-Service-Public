@@ -3,13 +3,11 @@ import axios, { AxiosInstance } from 'axios'
 import * as FormData from 'form-data'
 
 interface FusionBrainClient {
-	getStyles(): Promise<string[]>
 	createImage(prompt: string, style: string): Promise<{ taskId: string }>
 	getTaskStatus(
 		taskId: string
 	): Promise<{ status: 'INITIAL' | 'PROCESSING' | 'DONE' | 'FAIL'; errorDescription?: string; files?: string[] }>
 	getResultFromStatus(files: string[]): Promise<Buffer>
-	checkAvailability(): Promise<{ pipeline_status: string }>
 }
 
 class HttpFusionBrainClient implements FusionBrainClient {
@@ -42,32 +40,13 @@ class HttpFusionBrainClient implements FusionBrainClient {
 		return this.pipelineId
 	}
 
-	async getStyles(): Promise<string[]> {
-		// Try multiple known CDN URLs; attach auth headers if provided
-		const urls = [
-			'https://api-key.fusionbrain.ai/key/api/v1/pipeline/static/styles/api',
-			/* 'https://cdn.fusionbrain.ai/static/styles/api', */
-		]
-		for (const url of urls) {
-			try {
-				const { data } = await axios.get(url, { responseType: 'json', headers: this.authHeaders })
-				if (Array.isArray(data)) return data
-				if (Array.isArray(data?.styles)) return data.styles
-			} catch {
-				// ignore and try next url
-			}
-		}
-		return []
-	}
-
-	async createImage(prompt: string, style: string): Promise<{ taskId: string }> {
+	async createImage(prompt: string): Promise<{ taskId: string }> {
 		const pipelineId = await this.ensurePipelineId()
 		const params = {
 			type: 'GENERATE',
 			numImages: 1,
 			width: 1024,
 			height: 1024,
-			style,
 			generateParams: { query: prompt },
 		}
 		// multipart/form-data: fields pipeline_id, params (application/json)
@@ -96,19 +75,11 @@ class HttpFusionBrainClient implements FusionBrainClient {
 		const base64 = files[0]
 		return Buffer.from(base64, 'base64')
 	}
-
-	async checkAvailability(): Promise<{ pipeline_status: string }> {
-		const { data } = await this.http.get('key/api/v1/pipeline/availability', { headers: this.authHeaders })
-		return data
-	}
 }
 
 @Injectable()
 export class FusionBrainService implements OnModuleInit {
 	private client!: FusionBrainClient
-	private styles: string[] = []
-	private lastFetchedAt: number = 0
-	private stylesTtlMs = 60 * 60 * 1000 // 1h cache
 
 	async onModuleInit() {
 		this.client = new HttpFusionBrainClient({
@@ -118,17 +89,7 @@ export class FusionBrainService implements OnModuleInit {
 		})
 	}
 
-	async getValidStyles(): Promise<string[]> {
-		return this.styles
-	}
-
 	async requestImage(prompt: string, style: string): Promise<string> {
-		/* 
-		await this.refreshStylesIfNeeded()
-		if (!this.styles.includes(style)) {
-			throw new Error('Invalid style')
-		}
-		*/
 		const { taskId } = await this.client.createImage(prompt, style)
 		return taskId
 	}
@@ -136,19 +97,15 @@ export class FusionBrainService implements OnModuleInit {
 	async waitForResult(taskId: string, timeoutMs = 5 * 60 * 1000): Promise<Buffer> {
 		const start = Date.now()
 		while (Date.now() - start < timeoutMs) {
-			const s = await this.client.getTaskStatus(taskId)
-			if (s.status === 'DONE' && s.files && s.files.length > 0) {
-				return this.client.getResultFromStatus(s.files)
+			const taskStatus = await this.client.getTaskStatus(taskId)
+			if (taskStatus.status === 'DONE' && taskStatus.files && taskStatus.files.length > 0) {
+				return this.client.getResultFromStatus(taskStatus.files)
 			}
-			if (s.status === 'FAIL') {
-				throw new Error(s.errorDescription || 'Generation failed')
+			if (taskStatus.status === 'FAIL') {
+				throw new Error(taskStatus.errorDescription || 'Generation failed')
 			}
 			await new Promise(r => setTimeout(r, 2000))
 		}
 		throw new Error('Generation timeout')
-	}
-
-	async checkAvailability() {
-		return this.client.checkAvailability()
 	}
 }

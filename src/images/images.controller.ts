@@ -17,20 +17,6 @@ import { ImagesService } from './images.service'
 export class ImagesController {
 	constructor(private readonly images: ImagesService) {}
 
-	@Get('styles')
-	@ApiOperation({ summary: 'Get available styles for validation' })
-	@ApiOkResponse({ description: 'List of available styles' })
-	async styles() {
-		return this.images.getStyles()
-	}
-
-	@Get('availability')
-	@ApiOperation({ summary: 'Check Fusion Brain pipeline availability' })
-	@ApiOkResponse({ description: 'Pipeline availability status' })
-	async availability() {
-		return this.images.checkAvailability()
-	}
-
 	@Post()
 	@ApiOperation({ summary: 'Create image generation task' })
 	@ApiCreatedResponse({ description: 'Task created' })
