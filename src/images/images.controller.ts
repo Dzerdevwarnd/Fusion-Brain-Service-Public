@@ -15,14 +15,14 @@ import { ImagesService } from './images.service'
 @ApiTags('images')
 @Controller('images')
 export class ImagesController {
-	constructor(private readonly images: ImagesService) {}
+	constructor(private readonly imagesService: ImagesService) {}
 
 	@Post()
 	@ApiOperation({ summary: 'Create image generation task' })
 	@ApiCreatedResponse({ description: 'Task created' })
 	@ApiBadRequestResponse({ description: 'Validation error' })
 	async create(@Body() dto: CreateImageDto) {
-		return this.images.create(dto.prompt, dto.style)
+		return this.imagesService.create(dto.prompt, dto.style)
 	}
 
 	@Get(':id/file')
@@ -30,7 +30,7 @@ export class ImagesController {
 	@ApiQuery({ name: 'type', enum: ['original', 'thumbnail'], required: true })
 	@ApiOkResponse({ description: 'Image file stream' })
 	async getFile(@Param('id') id: string, @Query() query: GetFileDto, @Res({ passthrough: true }) res: Response) {
-		const { stream, filename } = await this.images.getFile(id, query.type)
+		const { stream, filename } = await this.imagesService.getFile(id, query.type)
 		res.setHeader('Content-Disposition', `inline; filename="${filename}"`)
 		return new StreamableFile(stream)
 	}
@@ -39,6 +39,6 @@ export class ImagesController {
 	@ApiOperation({ summary: 'List images with thumbnail and original URLs' })
 	@ApiOkResponse({ description: 'List of images with pagination' })
 	async list(@Query('page') page?: string, @Query('pageSize') pageSize?: string) {
-		return this.images.list(Number(page) || 1, Number(pageSize) || 20)
+		return this.imagesService.list(Number(page) || 1, Number(pageSize) || 20)
 	}
 }
