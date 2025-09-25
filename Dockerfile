@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:20-bullseye-slim AS builder
 WORKDIR /app
 
 # Enable pnpm via corepack
@@ -7,18 +7,18 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Install deps with lockfile (include dev deps)
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod=false
+RUN pnpm install --no-frozen-lockfile --prod=false
 
 # Build
 COPY . .
 RUN pnpm prisma:generate && pnpm build
 
 # Runtime stage
-FROM node:20-alpine
+FROM node:20-bullseye-slim
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy runtime artifacts
+# Copy runtime artifacts and node_modules (includes generated Prisma Client)
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist

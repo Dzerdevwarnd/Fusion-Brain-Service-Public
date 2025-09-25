@@ -10,10 +10,17 @@ async function bootstrap() {
 	const config = new DocumentBuilder()
 		.setTitle('FusionBrain Image Service')
 		.setDescription('API for async image generation and storage')
-		.setVersion('0.1.0')
+		.setVersion('0.2.0')
+		.addServer('/')
 		.build()
 	const document = SwaggerModule.createDocument(app, config)
-	SwaggerModule.setup('api', app, document)
+	SwaggerModule.setup('api', app, document, {
+		customSiteTitle: 'FusionBrain Image Service API',
+		explorer: true,
+		swaggerOptions: {
+			persistAuthorization: true,
+		},
+	})
 
 	await app.listen(process.env.PORT || 3000)
 }

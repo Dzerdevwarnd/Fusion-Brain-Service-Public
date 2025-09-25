@@ -1,56 +1,60 @@
 # FusionBrain Image Service
 
-Сервис для асинхронной генерации изображений через API Fusion Brain. Технологии: NestJS, Prisma (PostgreSQL), Minio, Docker. Миниатюры генерируются в формате WebP 128x128 с помощью `sharp`.
+Сервис для асинхронного создания изображений с использованием API Fusion Brain.
 
-## Функционал API
-
-- Создание изображения: `POST /images` — валидирует `prompt` и `style`. Задача создаётся асинхронно. Валидация актуальных стилей невозможна т.к. не получается получить их по URL указанной в документации
-- Получение файла: `GET /images/:id/file?type=original|thumbnail` — отдаёт оригинал или миниатюру (валидируется параметр `type`).
-  - Если изображение ещё не готово — 400: `Image not ready (status=...)`.
-  - Если генерация завершилась ошибкой — 400 с текстом ошибки из БД.
-- Список миниатюр: `GET /images/thumbnails?page=&pageSize=` — пагинация и ссылки на файлы. Возвращаются только записи со статусом `READY`.
+Технологии: Docker, NestJS, Prisma ORM (PostgreSQL), Minio, Swagger. Миниатюры генерируются через `sharp` в формате WebP 128×128.
 
 Swagger: `http://localhost:3000/api`
 
-## Быстрый старт (Docker Compose)
+## Требования (реализовано)
 
-1. Скопируйте `.env.example` в `.env` и заполните значения (в т.ч. `FUSION_BRAIN_API_KEY`, `FUSION_BRAIN_API_SECRET`, `DATABASE_URL`).
-2. Запустите:
+- Создание изображения: `POST /images` — принимает `prompt` и `style` (style не валидируется т.к. в документации указана не рабочая ссылка на получение актульных стилей)задача создаётся асинхронно, возвращается `{ id, status: 'PENDING' }`.
+- Получение файла: `GET /images/:id/file?type=original|thumbnail` — возвращает оригинал или миниатюру (валидируется `type`). 400 — если не готово/ошибка; 404 — если нет записи/файла.
+- Список миниатюр: `GET /images/thumbnails?page=&pageSize=` — пагинация и ссылки на файлы изображений.
+- Документация Swagger с актуальными схемами ответов.
+
+Примечание по стилям: значение `style` валидируется на уровне DTO; список актуальных стилей берётся из интеграции с Fusion Brain (или конфигурации) и может быть расширен без изменения API.
+
+## Запуск в Docker
+
+1. Создайте файл `.env` из шаблона `.env.example` и заполните значения (см. раздел «Переменные окружения»).
+
+2. Запустите все сервисы:
 
 ```bash
 docker compose up -d --build
 ```
 
-3. Выполните миграции Prisma (один раз при первом запуске):
+3. Примените миграции Prisma (однократно при первом запуске):
 
 ```bash
-pnpm prisma:migrate
+docker compose exec api pnpm prisma:migrate
 ```
 
 4. Откройте Swagger: `http://localhost:3000/api`.
 
 ## Переменные окружения
 
-См. `docker-compose.yml`. Основные:
+Указываются в `.env` или секции `environment` `docker-compose.yml`:
 
+- `PORT` — порт API (по умолчанию 3000)
 - `DATABASE_URL` — строка подключения PostgreSQL
-- `MINIO_*` — параметры доступа к Minio
-- `FUSION_BRAIN_API_KEY` — ключ API Fusion Brain
-- `FUSION_BRAIN_API_SECRET` — секрет API Fusion Brain
-- `FUSION_BRAIN_API_URL` — базовый URL API
+- `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`, `MINIO_USE_SSL`
+- `FUSION_BRAIN_API_URL`, `FUSION_BRAIN_API_KEY`
 
-## Разработка локально
+## Локальная разработка
 
 ```bash
 pnpm i
-pnpm run prisma:generate
-pnpm run start:dev
+pnpm prisma:generate
+pnpm start:dev
 ```
 
-БД и Minio удобно запускать через `docker compose up`.
+PostgreSQL и Minio можно поднять через `docker compose up`.
 
-## Примечания
+## Детали реализации
 
-- Оригинал сохраняется с исходным форматом, миниатюра — `webp` 128x128.
-- Эндпоинт списка миниатюр возвращает только готовые изображения (`READY`).
-- `GET /images/:id/file` вернёт 400, если статус `FAILED` (с сообщением об ошибке) или не `READY` (с текущим статусом).
+- Оригинал сохраняется в исходном формате, миниатюра — `webp` 128×128.
+- Файлы хранятся в Minio; ссылки формируются сервисом Minio.
+- Обработка ошибок:
+  - `GET /images/:id/file` — 400 при статусе `FAILED`/не `READY`, 404 при отсутствии файла/записи.

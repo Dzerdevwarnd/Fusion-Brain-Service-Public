@@ -8,7 +8,7 @@ export class CreateImageDto {
 	@MaxLength(2000)
 	prompt!: string
 
-	@ApiProperty({ description: 'Style name', example: 'photorealistic' })
+	@ApiProperty({ description: 'Style name', example: 'ANIME' })
 	@IsString()
 	@IsNotEmpty()
 	style!: string
