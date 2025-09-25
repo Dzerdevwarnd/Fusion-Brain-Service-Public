@@ -70,10 +70,15 @@ export class ImagesService {
 				status: image.status,
 				prompt: image.prompt,
 				style: image.style,
-				thumbnailUrl: image.thumbnailKey ? this.minio.getObjectUrl(image.thumbnailKey) : null,
-				originalUrl: image.originalKey ? this.minio.getObjectUrl(image.originalKey) : null,
+				thumbnailUrl: image.thumbnailKey ? this.getApiFileUrl(image.id, 'thumbnail') : null,
+				originalUrl: image.originalKey ? this.getApiFileUrl(image.id, 'original') : null,
 				createdAt: image.createdAt,
 			})),
 		}
+	}
+
+	private getApiFileUrl(id: string, type: 'original' | 'thumbnail'): string {
+		const baseUrl = process.env.API_BASE_URL || 'http://localhost:3001'
+		return `${baseUrl}/images/${id}/file?type=${type}`
 	}
 }

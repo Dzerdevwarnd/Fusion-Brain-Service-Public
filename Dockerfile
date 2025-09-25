@@ -18,6 +18,9 @@ FROM node:20-bullseye-slim
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Enable pnpm via corepack for runtime stage
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 # Copy runtime artifacts and node_modules (includes generated Prisma Client)
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules

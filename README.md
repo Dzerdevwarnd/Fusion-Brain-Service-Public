@@ -31,7 +31,7 @@ docker compose up -d --build
 docker compose exec api pnpm prisma:migrate
 ```
 
-4. Откройте Swagger: `http://localhost:3000/api`.
+4. Откройте Swagger: `http://localhost:3001/api`.
 
 ## Переменные окружения
 

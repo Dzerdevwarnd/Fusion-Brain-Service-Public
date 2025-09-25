@@ -5,6 +5,7 @@ services:
     container_name: fb-image-service
     environment:
       - PORT=3000
+      - API_BASE_URL=http://localhost:3001
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/fb_images?schema=public
       - MINIO_ENDPOINT=minio
       - MINIO_PORT=9000
@@ -13,6 +14,7 @@ services:
       - MINIO_USE_SSL=false
       - MINIO_BUCKET=images
       - FUSION_BRAIN_API_KEY=${FUSION_BRAIN_API_KEY}
+      - FUSION_BRAIN_API_SECRET=${FUSION_BRAIN_API_SECRET}
       - FUSION_BRAIN_API_URL=https://api-key.fusionbrain.ai
     ports:
       - '3001:3000'
