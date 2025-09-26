@@ -4,7 +4,8 @@
 
 Технологии: Docker, NestJS, Prisma ORM (PostgreSQL), Minio, Swagger. Миниатюры генерируются через `sharp` в формате WebP 128×128.
 
-Swagger: `http://localhost:3000/api`
+Swagger: `http://localhost:3001/api`
+MinIO Console: `http://localhost:9001` (логин: minioadmin, пароль: minioadmin)
 
 ## Требования (реализовано)
 
@@ -38,9 +39,10 @@ docker compose exec api pnpm prisma:migrate
 Указываются в `.env` или секции `environment` `docker-compose.yml`:
 
 - `PORT` — порт API (по умолчанию 3000)
+- `API_BASE_URL` — базовый URL для формирования ссылок на файлы
 - `DATABASE_URL` — строка подключения PostgreSQL
 - `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`, `MINIO_USE_SSL`
-- `FUSION_BRAIN_API_URL`, `FUSION_BRAIN_API_KEY`
+- `FUSION_BRAIN_API_URL`, `FUSION_BRAIN_API_KEY`, `FUSION_BRAIN_API_SECRET`
 
 ## Локальная разработка
 
@@ -55,6 +57,6 @@ PostgreSQL и Minio можно поднять через `docker compose up`.
 ## Детали реализации
 
 - Оригинал сохраняется в исходном формате, миниатюра — `webp` 128×128.
-- Файлы хранятся в Minio; ссылки формируются сервисом Minio.
+- Файлы хранятся в Minio; ссылки формируются через API сервиса для безопасности.
 - Обработка ошибок:
   - `GET /images/:id/file` — 400 при статусе `FAILED`/не `READY`, 404 при отсутствии файла/записи.
